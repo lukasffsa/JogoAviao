@@ -13,6 +13,7 @@ const mobileBreakpoint = 900;
 let joystickActive = false;
 let touchControl = { active: false, x: 0, y: 0 };
 let activeTouchId = null;
+let pointerClientPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
 function shouldUseTouchJoystick() {
     return window.innerWidth <= mobileBreakpoint;
@@ -32,6 +33,10 @@ function updateMouseFromPoint(clientX, clientY) {
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+export function getAimPointerPosition() {
+    return { x: pointerClientPosition.x, y: pointerClientPosition.y };
 }
 
 function shouldHandleTouchEvent(event) {
@@ -84,9 +89,17 @@ function updateJoystick(clientX, clientY) {
     touchControl.active = true;
     touchControl.x = clampedX;
     touchControl.y = -clampedY;
+
+    const screenX = window.innerWidth / 2 + clampedX * 220;
+    const screenY = window.innerHeight / 2 + clampedY * 140;
+    pointerClientPosition.x = screenX;
+    pointerClientPosition.y = screenY;
+    updateMouseFromPoint(screenX, screenY);
 }
 
 window.addEventListener('mousemove', (event) => {
+    pointerClientPosition.x = event.clientX;
+    pointerClientPosition.y = event.clientY;
     updateMouseFromPoint(event.clientX, event.clientY);
 });
 
@@ -98,6 +111,8 @@ window.addEventListener('touchstart', (event) => {
 
     event.preventDefault();
     activeTouchId = touch.identifier;
+    pointerClientPosition.x = touch.clientX;
+    pointerClientPosition.y = touch.clientY;
     updateMouseFromPoint(touch.clientX, touch.clientY);
     showJoystick(touch.clientX, touch.clientY);
     updateJoystick(touch.clientX, touch.clientY);
@@ -110,7 +125,9 @@ window.addEventListener('touchmove', (event) => {
     if (!touch || !isTouchOnCanvas(touch.clientX, touch.clientY)) return;
 
     event.preventDefault();
-    updateMouseFromPoint(touch.clientX, touch.clientY);
+    pointerClientPosition.x = touch.clientX;
+    pointerClientPosition.y = touch.clientY;
+    updateMouseFromPoint(pointerClientPosition.x, pointerClientPosition.y);
     updateJoystick(touch.clientX, touch.clientY);
 }, { passive: false });
 
@@ -171,13 +188,6 @@ export function updateAirplane() {
 }
 
 function updateRaycast() {
-    if (touchControl.active && joystickActive) {
-        const targetX = THREE.MathUtils.clamp(airplane.position.x + touchControl.x * 260, -boundMaxX, boundMaxX);
-        const targetY = THREE.MathUtils.clamp(airplane.position.y + touchControl.y * 120, 140, 260);
-        intersectionPoint.set(targetX, targetY, airplane.position.z);
-        return;
-    }
-
     raycaster.setFromCamera(mouse, camera);
     raycaster.ray.intersectPlane(planeXY, intersectionPoint);
 }
