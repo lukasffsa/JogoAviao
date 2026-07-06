@@ -68,8 +68,10 @@ function updateJoystick(clientX, clientY) {
     if (!joystickBase || !joystickKnob) return;
 
     const baseRect = joystickBase.getBoundingClientRect();
-    const dx = (clientX - baseRect.left) / (baseRect.width / 2);
-    const dy = (clientY - baseRect.top) / (baseRect.height / 2);
+    const centerX = baseRect.left + baseRect.width / 2;
+    const centerY = baseRect.top + baseRect.height / 2;
+    const dx = (clientX - centerX) / (baseRect.width / 2);
+    const dy = (clientY - centerY) / (baseRect.height / 2);
 
     const clampedX = THREE.MathUtils.clamp(dx, -1, 1);
     const clampedY = THREE.MathUtils.clamp(dy, -1, 1);
