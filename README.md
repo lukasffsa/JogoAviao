@@ -1,6 +1,6 @@
 # JogoAviao
 
-Este projeto é um jogo 3D de avião desenvolvido com JavaScript e a biblioteca Three.js. A aplicação apresenta uma cena em primeira pessoa, com terreno, inimigos, tiros, colisões, itens de cura e uma interface de carregamento e pausa.
+Este projeto é um jogo 3D de avião desenvolvido com JavaScript e a biblioteca Three.js. A aplicação apresenta uma cena com avião, terreno procedural, inimigos, tiros, colisões, itens de cura, águas com shaders e uma interface de carregamento e pausa.
 
 A estrutura do código está dividida em módulos separados para facilitar a organização. O arquivo principal, main.js, controla o fluxo do jogo, o ciclo de animação, os estados de pause e reinício, além de integrar os sistemas de câmera, áudio, inimigos, colisão e HUD.
 
