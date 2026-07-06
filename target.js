@@ -132,10 +132,24 @@ export function createCrosshair(renderer) {
     let cursorX = mouseX;
     let cursorY = mouseY;
 
+    const hudHideZone = { top: 90, side: 180 };
+
+    function updateCrosshairVisibility() {
+        const shouldHide = cursorY < hudHideZone.top && (cursorX < hudHideZone.side || cursorX > window.innerWidth - hudHideZone.side);
+        mira.style.display = shouldHide ? "none" : "block";
+    }
+
     document.addEventListener("mousemove", (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
     });
+
+    document.addEventListener("touchmove", (e) => {
+        if (e.touches.length > 0) {
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+        }
+    }, { passive: true });
 
     // ─── Loop de animação ─────────────────────────────────────────────────────
 
@@ -151,6 +165,7 @@ export function createCrosshair(renderer) {
             // pulso suave de escala (Star Fox pisca a mira ao travar alvo)
             const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.04;
 
+            updateCrosshairVisibility();
             mira.style.left      = cursorX + "px";
             mira.style.top       = cursorY + "px";
             mira.style.transform = `translate(-50%,-50%) scale(${pulse})`;
@@ -174,7 +189,7 @@ export function createCrosshair(renderer) {
 
         resume() {
             paused = false;
-            mira.style.display = "block";
+            updateCrosshairVisibility();
             document.body.style.cursor = "none";
         }
     };

@@ -1,9 +1,99 @@
 import * as THREE from  'three';
-import { renderer, raycaster, targetPosition, boundMaxX, maxRoll, alpha, rotationSpeed, mouse, planeXY, intersectionPoint } from './config.js'
+import { renderer, raycaster, targetPosition, boundMaxX, maxRoll, rotationSpeed, mouse, planeXY, intersectionPoint } from './config.js'
 import { airplane } from './airplane.js'
 import { camera } from './camera.js'
 
 const baseRotationX = airplane.rotation.x;
+
+const mobileControls = document.getElementById('mobileControls');
+const joystickBase = document.getElementById('joystickBase');
+const joystickKnob = document.getElementById('joystickKnob');
+const mobileBreakpoint = 900;
+
+let joystickActive = false;
+let touchControl = { active: false, x: 0, y: 0 };
+
+function shouldUseTouchJoystick() {
+    return window.innerWidth <= mobileBreakpoint;
+}
+
+function updateMouseFromPoint(clientX, clientY) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+function showJoystick(clientX, clientY) {
+    if (!mobileControls || !joystickBase || !joystickKnob || !shouldUseTouchJoystick()) return;
+
+    mobileControls.classList.add('visible');
+    joystickBase.style.left = `${clientX}px`;
+    joystickBase.style.top = `${clientY}px`;
+    joystickBase.style.transform = 'translate(-50%, -50%)';
+    joystickKnob.style.transform = 'translate(-50%, -50%)';
+    joystickActive = true;
+}
+
+function hideJoystick() {
+    if (!mobileControls || !joystickBase || !joystickKnob) return;
+
+    mobileControls.classList.remove('visible');
+    joystickKnob.style.transform = 'translate(-50%, -50%)';
+    joystickActive = false;
+    touchControl.active = false;
+    touchControl.x = 0;
+    touchControl.y = 0;
+}
+
+function updateJoystick(clientX, clientY) {
+    if (!joystickBase || !joystickKnob) return;
+
+    const baseRect = joystickBase.getBoundingClientRect();
+    const dx = (clientX - baseRect.left) / (baseRect.width / 2);
+    const dy = (clientY - baseRect.top) / (baseRect.height / 2);
+
+    const clampedX = THREE.MathUtils.clamp(dx, -1, 1);
+    const clampedY = THREE.MathUtils.clamp(dy, -1, 1);
+
+    const knobOffsetX = clampedX * 24;
+    const knobOffsetY = clampedY * 24;
+
+    joystickKnob.style.transform = `translate(calc(-50% + ${knobOffsetX}px), calc(-50% + ${knobOffsetY}px))`;
+
+    touchControl.active = true;
+    touchControl.x = clampedX;
+    touchControl.y = -clampedY;
+}
+
+window.addEventListener('mousemove', (event) => {
+    updateMouseFromPoint(event.clientX, event.clientY);
+});
+
+window.addEventListener('touchstart', (event) => {
+    if (!shouldUseTouchJoystick() || event.touches.length === 0) return;
+
+    if (event.touches.length > 0) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        updateMouseFromPoint(touch.clientX, touch.clientY);
+        showJoystick(touch.clientX, touch.clientY);
+        updateJoystick(touch.clientX, touch.clientY);
+    }
+}, { passive: false });
+
+window.addEventListener('touchmove', (event) => {
+    if (!shouldUseTouchJoystick() || event.touches.length === 0) return;
+
+    if (event.touches.length > 0) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        updateMouseFromPoint(touch.clientX, touch.clientY);
+        updateJoystick(touch.clientX, touch.clientY);
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', hideJoystick);
+window.addEventListener('touchcancel', hideJoystick);
 
 export function updateAirplane() {
     updateRaycast();
@@ -14,80 +104,38 @@ export function updateAirplane() {
         airplane.position.z
     );
 
-    // diferença horizontal
     const deltaX = targetPosition.x - airplane.position.x;
-
-    // diferença vertical
     const deltaY = targetPosition.y - airplane.position.y;
 
-    // rotação lateral 
     const targetRoll = -(deltaX * 0.05);
+    const clampedRoll = THREE.MathUtils.clamp(targetRoll, -maxRoll, maxRoll);
 
-    const clampedRoll =
-        THREE.MathUtils.clamp(
-            targetRoll,
-            -maxRoll,
-            maxRoll
-        );
-
-    // inclinação nariz cima/baixo
     const targetPitch = deltaY * 0.01;
+    const clampedPitch = THREE.MathUtils.clamp(targetPitch, -0.18, 0.18);
 
-    const clampedPitch =
-        THREE.MathUtils.clamp(
-            targetPitch,
-            -0.18,
-            0.18
-        );
-
-    // airplane.position.lerp(targetPosition, alpha);
-
-    const moveSpeed = 5; 
-
-    const direction = targetPosition
-        .clone()
-        .sub(airplane.position);
-
+    const moveSpeed = 5;
+    const direction = targetPosition.clone().sub(airplane.position);
     const distance = direction.length();
 
     if(distance > moveSpeed){
-
         direction.normalize();
-
-        airplane.position.add(
-            direction.multiplyScalar(moveSpeed)
-        );
-
+        airplane.position.add(direction.multiplyScalar(moveSpeed));
     }else{
-
-        airplane.position.copy(
-            targetPosition
-        );
+        airplane.position.copy(targetPosition);
     }
 
-    // esquerda-direita
-    airplane.rotation.z =
-        THREE.MathUtils.lerp(
-            airplane.rotation.y,
-            clampedRoll,
-            rotationSpeed
-        );
-
-    // cima-baixo 
-    airplane.rotation.x =
-        THREE.MathUtils.lerp(
-            airplane.rotation.x,
-            baseRotationX - clampedPitch,
-            rotationSpeed * 0.35
-        );
+    airplane.rotation.z = THREE.MathUtils.lerp(airplane.rotation.y, clampedRoll, rotationSpeed);
+    airplane.rotation.x = THREE.MathUtils.lerp(airplane.rotation.x, baseRotationX - clampedPitch, rotationSpeed * 0.35);
 }
 
-window.addEventListener('mousemove', (event) => {
-    mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
-    mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
-})
-
 function updateRaycast() {
+    if (touchControl.active && joystickActive) {
+        const targetX = THREE.MathUtils.clamp(airplane.position.x + touchControl.x * 260, -boundMaxX, boundMaxX);
+        const targetY = THREE.MathUtils.clamp(airplane.position.y + touchControl.y * 120, 140, 260);
+        intersectionPoint.set(targetX, targetY, airplane.position.z);
+        return;
+    }
+
     raycaster.setFromCamera(mouse, camera);
     raycaster.ray.intersectPlane(planeXY, intersectionPoint);
 }
