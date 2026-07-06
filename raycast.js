@@ -129,6 +129,14 @@ window.addEventListener('touchcancel', (event) => {
     hideJoystick();
 });
 
+export function getJoystickAimVector() {
+    return {
+        active: joystickActive && touchControl.active,
+        x: touchControl.x,
+        y: touchControl.y
+    };
+}
+
 export function updateAirplane() {
     updateRaycast();
 

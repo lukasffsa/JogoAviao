@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { renderer } from './config.js';
+import { getJoystickAimVector } from './raycast.js';
 
 export function createCrosshair(renderer) {
 
@@ -145,6 +146,9 @@ export function createCrosshair(renderer) {
     });
 
     document.addEventListener("touchmove", (e) => {
+        const joystickState = getJoystickAimVector();
+        if (joystickState.active) return;
+
         if (e.touches.length > 0) {
             mouseX = e.touches[0].clientX;
             mouseY = e.touches[0].clientY;
@@ -158,6 +162,14 @@ export function createCrosshair(renderer) {
     function update() {
 
         if (!paused) {
+            const joystickState = getJoystickAimVector();
+
+            if (joystickState.active) {
+                const targetX = window.innerWidth / 2 + joystickState.x * 180;
+                const targetY = window.innerHeight / 2 - joystickState.y * 140;
+                mouseX = targetX;
+                mouseY = targetY;
+            }
 
             cursorX += (mouseX - cursorX) * 0.18;
             cursorY += (mouseY - cursorY) * 0.18;
