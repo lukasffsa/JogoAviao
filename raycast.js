@@ -23,6 +23,14 @@ function updateMouseFromPoint(clientX, clientY) {
     mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 }
 
+function shouldHandleTouchEvent(event) {
+    const touch = event.touches?.[0] || event.changedTouches?.[0];
+    if (!touch) return false;
+
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    return !!target && (target === renderer.domElement || renderer.domElement.contains(target));
+}
+
 function showJoystick(clientX, clientY) {
     if (!mobileControls || !joystickBase || !joystickKnob || !shouldUseTouchJoystick()) return;
 
@@ -70,30 +78,32 @@ window.addEventListener('mousemove', (event) => {
 });
 
 window.addEventListener('touchstart', (event) => {
-    if (!shouldUseTouchJoystick() || event.touches.length === 0) return;
+    if (!shouldUseTouchJoystick() || !shouldHandleTouchEvent(event) || event.touches.length === 0) return;
 
-    if (event.touches.length > 0) {
-        event.preventDefault();
-        const touch = event.touches[0];
-        updateMouseFromPoint(touch.clientX, touch.clientY);
-        showJoystick(touch.clientX, touch.clientY);
-        updateJoystick(touch.clientX, touch.clientY);
-    }
+    event.preventDefault();
+    const touch = event.touches[0];
+    updateMouseFromPoint(touch.clientX, touch.clientY);
+    showJoystick(touch.clientX, touch.clientY);
+    updateJoystick(touch.clientX, touch.clientY);
 }, { passive: false });
 
 window.addEventListener('touchmove', (event) => {
-    if (!shouldUseTouchJoystick() || event.touches.length === 0) return;
+    if (!shouldUseTouchJoystick() || !shouldHandleTouchEvent(event) || event.touches.length === 0) return;
 
-    if (event.touches.length > 0) {
-        event.preventDefault();
-        const touch = event.touches[0];
-        updateMouseFromPoint(touch.clientX, touch.clientY);
-        updateJoystick(touch.clientX, touch.clientY);
-    }
+    event.preventDefault();
+    const touch = event.touches[0];
+    updateMouseFromPoint(touch.clientX, touch.clientY);
+    updateJoystick(touch.clientX, touch.clientY);
 }, { passive: false });
 
-window.addEventListener('touchend', hideJoystick);
-window.addEventListener('touchcancel', hideJoystick);
+window.addEventListener('touchend', (event) => {
+    if (!shouldHandleTouchEvent(event)) return;
+    hideJoystick();
+});
+window.addEventListener('touchcancel', (event) => {
+    if (!shouldHandleTouchEvent(event)) return;
+    hideJoystick();
+});
 
 export function updateAirplane() {
     updateRaycast();

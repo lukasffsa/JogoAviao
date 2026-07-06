@@ -18,6 +18,14 @@ function updateMouseFromPoint(clientX, clientY) {
   mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 }
 
+function shouldHandleTouchEvent(event) {
+  const touch = event.touches?.[0] || event.changedTouches?.[0];
+  if (!touch) return false;
+
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  return !!target && (target === renderer.domElement || renderer.domElement.contains(target));
+}
+
 window.addEventListener("mousemove", (e) => {
   updateMouseFromPoint(e.clientX, e.clientY);
 });
@@ -31,25 +39,29 @@ window.addEventListener("mouseup", (e) => {
 });
 
 window.addEventListener("touchstart", (e) => {
-  if (e.touches.length > 0) {
-    const touch = e.touches[0];
-    updateMouseFromPoint(touch.clientX, touch.clientY);
-    shooting = true;
-  }
+  if (!shouldHandleTouchEvent(e) || e.touches.length === 0) return;
+
+  e.preventDefault();
+  const touch = e.touches[0];
+  updateMouseFromPoint(touch.clientX, touch.clientY);
+  shooting = true;
 }, { passive: false });
 
 window.addEventListener("touchmove", (e) => {
-  if (e.touches.length > 0) {
-    const touch = e.touches[0];
-    updateMouseFromPoint(touch.clientX, touch.clientY);
-  }
+  if (!shouldHandleTouchEvent(e) || e.touches.length === 0) return;
+
+  e.preventDefault();
+  const touch = e.touches[0];
+  updateMouseFromPoint(touch.clientX, touch.clientY);
 }, { passive: false });
 
-window.addEventListener("touchend", () => {
+window.addEventListener("touchend", (e) => {
+  if (!shouldHandleTouchEvent(e)) return;
   shooting = false;
 });
 
-window.addEventListener("touchcancel", () => {
+window.addEventListener("touchcancel", (e) => {
+  if (!shouldHandleTouchEvent(e)) return;
   shooting = false;
 });
 
