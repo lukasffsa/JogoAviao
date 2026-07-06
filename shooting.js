@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { scene, renderer } from "./config.js";
+import { scene, mouse, raycaster } from "./config.js";
 import { camera } from "./camera.js";
 import { playShootingSound } from './audio.js';
 
@@ -10,17 +10,9 @@ const fireRate = 150;
 let shooting = false;
 let activeTouchId = null;
 
-const mouse = new THREE.Vector2();
-const raycaster = new THREE.Raycaster();
-
-function updateMouseFromPoint(clientX, clientY) {
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-}
-
 function isTouchOnCanvas(clientX, clientY) {
-  const rect = renderer.domElement.getBoundingClientRect();
+  const rect = document.querySelector('canvas')?.getBoundingClientRect();
+  if (!rect) return false;
   return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
 }
 
@@ -28,10 +20,6 @@ function findTouchById(touches, targetId) {
   if (!touches) return null;
   return Array.from(touches).find((touch) => touch.identifier === targetId) || null;
 }
-
-window.addEventListener("mousemove", (e) => {
-  updateMouseFromPoint(e.clientX, e.clientY);
-});
 
 window.addEventListener("mousedown", (e) => {
   if (e.button === 0) shooting = true;
@@ -49,7 +37,6 @@ window.addEventListener("touchstart", (e) => {
 
   e.preventDefault();
   activeTouchId = touch.identifier;
-  updateMouseFromPoint(touch.clientX, touch.clientY);
   shooting = true;
 }, { passive: false });
 
@@ -60,7 +47,6 @@ window.addEventListener("touchmove", (e) => {
   if (!touch || !isTouchOnCanvas(touch.clientX, touch.clientY)) return;
 
   e.preventDefault();
-  updateMouseFromPoint(touch.clientX, touch.clientY);
 }, { passive: false });
 
 window.addEventListener("touchend", (e) => {
