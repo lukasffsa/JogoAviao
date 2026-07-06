@@ -8,6 +8,7 @@ export let bullets = [];
 let canShoot = true;
 const fireRate = 150;
 let shooting = false;
+let activeTouchId = null;
 
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
@@ -18,12 +19,14 @@ function updateMouseFromPoint(clientX, clientY) {
   mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 }
 
-function shouldHandleTouchEvent(event) {
-  const touch = event.touches?.[0] || event.changedTouches?.[0];
-  if (!touch) return false;
+function isTouchOnCanvas(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
 
-  const target = document.elementFromPoint(touch.clientX, touch.clientY);
-  return !!target && (target === renderer.domElement || renderer.domElement.contains(target));
+function findTouchById(touches, targetId) {
+  if (!touches) return null;
+  return Array.from(touches).find((touch) => touch.identifier === targetId) || null;
 }
 
 window.addEventListener("mousemove", (e) => {
@@ -39,29 +42,40 @@ window.addEventListener("mouseup", (e) => {
 });
 
 window.addEventListener("touchstart", (e) => {
-  if (!shouldHandleTouchEvent(e) || e.touches.length === 0) return;
+  if (e.touches.length === 0) return;
+
+  const touch = e.touches[0];
+  if (!isTouchOnCanvas(touch.clientX, touch.clientY)) return;
 
   e.preventDefault();
-  const touch = e.touches[0];
+  activeTouchId = touch.identifier;
   updateMouseFromPoint(touch.clientX, touch.clientY);
   shooting = true;
 }, { passive: false });
 
 window.addEventListener("touchmove", (e) => {
-  if (!shouldHandleTouchEvent(e) || e.touches.length === 0) return;
+  if (activeTouchId === null) return;
+
+  const touch = findTouchById(e.touches, activeTouchId) || findTouchById(e.changedTouches, activeTouchId);
+  if (!touch || !isTouchOnCanvas(touch.clientX, touch.clientY)) return;
 
   e.preventDefault();
-  const touch = e.touches[0];
   updateMouseFromPoint(touch.clientX, touch.clientY);
 }, { passive: false });
 
 window.addEventListener("touchend", (e) => {
-  if (!shouldHandleTouchEvent(e)) return;
+  const touch = findTouchById(e.changedTouches, activeTouchId);
+  if (!touch) return;
+
+  activeTouchId = null;
   shooting = false;
 });
 
 window.addEventListener("touchcancel", (e) => {
-  if (!shouldHandleTouchEvent(e)) return;
+  const touch = findTouchById(e.changedTouches, activeTouchId);
+  if (!touch) return;
+
+  activeTouchId = null;
   shooting = false;
 });
 

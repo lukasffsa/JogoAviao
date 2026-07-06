@@ -12,9 +12,20 @@ const mobileBreakpoint = 900;
 
 let joystickActive = false;
 let touchControl = { active: false, x: 0, y: 0 };
+let activeTouchId = null;
 
 function shouldUseTouchJoystick() {
     return window.innerWidth <= mobileBreakpoint;
+}
+
+function isTouchOnCanvas(clientX, clientY) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function findTouchById(touches, targetId) {
+    if (!touches) return null;
+    return Array.from(touches).find((touch) => touch.identifier === targetId) || null;
 }
 
 function updateMouseFromPoint(clientX, clientY) {
@@ -78,30 +89,41 @@ window.addEventListener('mousemove', (event) => {
 });
 
 window.addEventListener('touchstart', (event) => {
-    if (!shouldUseTouchJoystick() || !shouldHandleTouchEvent(event) || event.touches.length === 0) return;
+    if (!shouldUseTouchJoystick() || event.touches.length === 0) return;
+
+    const touch = event.touches[0];
+    if (!isTouchOnCanvas(touch.clientX, touch.clientY)) return;
 
     event.preventDefault();
-    const touch = event.touches[0];
+    activeTouchId = touch.identifier;
     updateMouseFromPoint(touch.clientX, touch.clientY);
     showJoystick(touch.clientX, touch.clientY);
     updateJoystick(touch.clientX, touch.clientY);
 }, { passive: false });
 
 window.addEventListener('touchmove', (event) => {
-    if (!shouldUseTouchJoystick() || !shouldHandleTouchEvent(event) || event.touches.length === 0) return;
+    if (!shouldUseTouchJoystick() || activeTouchId === null) return;
+
+    const touch = findTouchById(event.touches, activeTouchId) || findTouchById(event.changedTouches, activeTouchId);
+    if (!touch || !isTouchOnCanvas(touch.clientX, touch.clientY)) return;
 
     event.preventDefault();
-    const touch = event.touches[0];
     updateMouseFromPoint(touch.clientX, touch.clientY);
     updateJoystick(touch.clientX, touch.clientY);
 }, { passive: false });
 
 window.addEventListener('touchend', (event) => {
-    if (!shouldHandleTouchEvent(event)) return;
+    const touch = findTouchById(event.changedTouches, activeTouchId);
+    if (!touch) return;
+
+    activeTouchId = null;
     hideJoystick();
 });
 window.addEventListener('touchcancel', (event) => {
-    if (!shouldHandleTouchEvent(event)) return;
+    const touch = findTouchById(event.changedTouches, activeTouchId);
+    if (!touch) return;
+
+    activeTouchId = null;
     hideJoystick();
 });
 
