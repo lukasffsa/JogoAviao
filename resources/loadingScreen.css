@@ -50,6 +50,8 @@ canvas {
 #myBtn {
     margin-top: 25px;
     padding: 14px 32px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 
     font-size: 20px;
     font-weight: bold;

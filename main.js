@@ -16,27 +16,8 @@ import { loadingManager } from './loadingManager.js';
 
 window.addEventListener('resize', ()=> onWindowResize(camera, renderer), false);
 
-//================ LOADING SCREEN =================
-loadingManager.onLoad = () => {
-
-    const button = document.getElementById("myBtn");
-
-    button.innerHTML = "Iniciar";
-    button.disabled = false;
-
-    button.addEventListener("click", onButtonPressed);
-    console.log("Loading complete!");
-};
-
-loadingManager.onProgress = (url, loaded, total) => {
-    const button = document.getElementById("myBtn");
-    button.innerHTML = `Loading... ${Math.round((loaded / total) * 100)}%`;
-    console.log(Math.round((loaded / total) * 100))
-};
-
-initAudio(camera, loadingManager);
-
-function onButtonPressed() {
+function startGame() {
+    if (gameStarted) return;
 
     const loadingScreen = document.getElementById("loading-screen");
 
@@ -49,9 +30,40 @@ function onButtonPressed() {
     gameStarted = true;
     mira.resume();
 
-    if (bgMusic.buffer)
+    if (bgMusic.buffer) {
         bgMusic.play();
+    }
 }
+
+//================ LOADING SCREEN =================
+loadingManager.onLoad = () => {
+
+    const button = document.getElementById("myBtn");
+
+    button.innerHTML = "Iniciar";
+    button.disabled = false;
+    button.style.touchAction = "manipulation";
+    button.style.webkitTapHighlightColor = "transparent";
+
+    button.addEventListener("click", startGame);
+    button.addEventListener("touchend", (event) => {
+        event.preventDefault();
+        startGame();
+    }, { passive: false });
+    button.addEventListener("pointerup", (event) => {
+        event.preventDefault();
+        startGame();
+    });
+    console.log("Loading complete!");
+};
+
+loadingManager.onProgress = (url, loaded, total) => {
+    const button = document.getElementById("myBtn");
+    button.innerHTML = `Loading... ${Math.round((loaded / total) * 100)}%`;
+    console.log(Math.round((loaded / total) * 100))
+};
+
+initAudio(camera, loadingManager);
 
 //================ PAUSA =================
 
