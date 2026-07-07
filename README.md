@@ -23,6 +23,8 @@ Como executar:
 2. Acesse o arquivo index.html pelo navegador.
 3. Aguarde o carregamento e clique em Iniciar para começar o jogo.
 
+Ou simplesmente acesse: https://lukasffsa.github.io/JogoAviao/
+
 Controles principais:
 
 - Tecla Esc: pausar o jogo.
